@@ -38,17 +38,30 @@
             resize: vertical;
             font-size: 13px;
         }
+        .upload-section {
+            background: #181a1f;
+            border: 2px dashed #6272a4;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .upload-section input {
+            color: #bd93f9;
+            cursor: pointer;
+        }
         button { 
             padding: 12px 28px; 
             background: #bd93f9; 
             border: none; 
             color: #282a36; 
             cursor: pointer; 
-            margin: 18px 0; 
+            margin: 10px 0; 
             font-weight: bold; 
             border-radius: 4px;
             font-size: 14px;
             transition: background 0.2s;
+            width: 100%;
         }
         button:hover { background: #ff79c6; }
         .status { 
@@ -66,7 +79,12 @@
     <div class="container">
         <h2>Lua VM-Level Obfuscator</h2>
         
-        <p>Kaynak Lua Kodunu Yazın:</p>
+        <div class="upload-section">
+            <p style="color: #ff79c6; font-weight: bold;">Büyük Kodlar İçin Dosya Yükleyin (Kasmayı Engeller):</p>
+            <input type="file" id="luaFileInput" accept=".lua,.txt">
+        </div>
+
+        <p>Veya Küçük Kodları Buraya Yazın:</p>
         <textarea id="inputCode">print("Selam VM Dunyasi!")</textarea>
         
         <button onclick="bridgeExecute()">Python ile VM Koduna Dönüştür</button>
@@ -74,40 +92,55 @@
         <p>Üretilen VM Tabanlı Kod:</p>
         <textarea id="outputCode" readonly placeholder="Korumalı kod burada belirecek..."></textarea>
         
-        <div id="statusBox" class="status">Sistem hazır. Python motoru arka planda kuruluyor...</div>
+        <div id="statusBox" class="status">Sistem hazır. Python yükleniyor...</div>
     </div>
 
     <script type="py" src="./obfuscator.py"></script>
 
     <script>
-        // Python başarıyla yüklendiğinde çalışacak fonksiyon
         function setSystemReady() {
             document.getElementById("statusBox").innerText = "Python Altyapısı Aktif ve Hazır!";
             document.getElementById("statusBox").style.color = "#50fa7b";
         }
 
-        // JavaScript Köprüsü (HTML -> Python -> HTML bağlantısı)
         function bridgeExecute() {
             try {
-                document.getElementById("statusBox").innerText = "Python VM derleyicisi çalışıyor...";
-                let inputLua = document.getElementById("inputCode").value;
+                document.getElementById("statusBox").innerText = "Kod analiz ediliyor...";
+                let fileInput = document.getElementById("luaFileInput");
                 
-                if (window.py_obfuscate) {
-                    // Python içindeki fonksiyonu doğrudan tetikliyoruz
-                    let obfuscatedResult = window.py_obfuscate(inputLua);
-                    document.getElementById("outputCode").value = obfuscatedResult;
-                    document.getElementById("statusBox").innerText = "Başarılı! VM Seviyesinde Kod Üretildi.";
-                    document.getElementById("statusBox").style.color = "#50fa7b";
+                // Eğer kullanıcı dosya seçtiyse, dosyayı kasma olmadan oku
+                if (fileInput.files.length > 0) {
+                    let file = fileInput.files[0];
+                    let reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        let fileContent = e.target.result;
+                        processWithPython(fileContent);
+                    };
+                    reader.readAsText(file);
                 } else {
-                    document.getElementById("statusBox").innerText = "Hata: Python motoru henüz tamamen yüklenmedi.";
-                    document.getElementById("statusBox").style.color = "#ff5555";
+                    // Dosya seçilmediyse normal kutudaki metni al
+                    let inputLua = document.getElementById("inputCode").value;
+                    processWithPython(inputLua);
                 }
             } catch (err) {
-                document.getElementById("statusBox").innerText = "Hata oluştu: " + err.message;
+                document.getElementById("statusBox").innerText = "Hata: " + err.message;
+                document.getElementById("statusBox").style.color = "#ff5555";
+            }
+        }
+
+        function processWithPython(codeToObfuscate) {
+            if (window.py_obfuscate) {
+                document.getElementById("statusBox").innerText = "Python devasa kodu kasma olmadan işliyor...";
+                let obfuscatedResult = window.py_obfuscate(codeToObfuscate);
+                document.getElementById("outputCode").value = obfuscatedResult;
+                document.getElementById("statusBox").innerText = "Başarılı! VM Kodu Üretildi.";
+                document.getElementById("statusBox").style.color = "#50fa7b";
+            } else {
+                document.getElementById("statusBox").innerText = "Hata: Python motoru yüklenemedi.";
                 document.getElementById("statusBox").style.color = "#ff5555";
             }
         }
     </script>
 </body>
 </html>
-
